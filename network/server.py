@@ -1,7 +1,7 @@
 import asyncio
 from camera.capture import CameraCapture
-from recognition import detector
 from recognition.detector import ObjectDetector
+import threading
 import cv2
 
 class AsyncServer:
@@ -9,7 +9,45 @@ class AsyncServer:
         self.host = host
         self.port = port
         self.camera_capture = CameraCapture()
-        self.detector = ObjectDetector(model_path="./models/yolo11n.pt", device='0')
+        self.detector = ObjectDetector(model_path="./models/model.pt", device='cpu')
+        self.running_display = False
+        self.display_thread = None
+
+    def start_display_thread(self):
+        """启动实时显示线程"""
+        if self.display_thread and self.display_thread.is_alive():
+            print("Display thread already running.")
+            return
+
+        self.running_display = True
+        self.display_thread = threading.Thread(target=self.display_loop)
+        self.display_thread.start()
+
+    def stop_display_thread(self):
+        """停止实时显示线程"""
+        self.running_display = False
+        if self.display_thread:
+            self.display_thread.join()
+            self.display_thread = None
+
+    def display_loop(self):
+        """持续获取帧并显示图像"""
+        while self.running_display:
+            color_image, _ = self.camera_capture.get_frame()
+            if color_image is None:
+                continue
+
+            results = self.detector.detect_objects(color_image)
+            frame = self.detector.draw_detections(color_image, results)
+            cv2.imshow("Live Detection", frame)
+
+            # 退出窗口支持 ESC 或窗口被关闭
+            key = cv2.waitKey(1)
+            if key == 27 or cv2.getWindowProperty("Live Detection", cv2.WND_PROP_VISIBLE) < 1:
+                self.running_display = False
+                break
+
+        cv2.destroyAllWindows() 
 
     async def handle_client(self, reader, writer):
         while True:
@@ -25,23 +63,22 @@ class AsyncServer:
             if message == "start":
                 response = "Starting camera capture..."
                 self.camera_capture.start_pipeline()
+                self.start_display_thread()
+
+            elif message == "exit":
+                response = "Goodbye!"
+                self.stop_display_thread()
+                self.camera_capture.stop_capture()
+
             elif message == "capture":
-                response = "Capturing frame..."
                 # 获取摄像头帧
                 color_image, depth_image = self.camera_capture.get_frame()
                 if color_image is not None:
                     results = self.detector.detect_objects(color_image)
-                    if results:
-                        frame = self.detector.draw_detections(color_image, results)
-                        # cv2.imwrite("captured_color_image.jpg", frame)
-                        # cv2.imwrite("captured_depth_image.jpg", depth_image)
-                    response += " with camera data"
-                    response += str(results)
+                    sorted_results = self.detector.get_sorted_detections(results)
+                    response = str(sorted_results)
                 else:
-                    response += " without camera data"
-            elif message == "exit":
-                response = "Goodbye!"
-                self.camera_capture.stop_capture()
+                    response = "None"
             else:
                 response = f"Received: {message}"
 

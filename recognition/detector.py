@@ -17,6 +17,30 @@ class ObjectDetector:
         # Ultralytics YOLO自动处理BGR/RGB，无需手动转换
         results = self.model(frame, device=self.device, verbose=False)
         return results
+    
+    # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
+    def get_sorted_detections(self, results):
+        """
+        Sort detections by confidence score.
+        :param results: Detection results from the YOLO model.
+        :return: Sorted list of detections.
+        """
+        detections = []
+        for result in results:
+            boxes = result.boxes.xyxy  # 获取边界框坐标
+            scores = result.boxes.conf  # 获取置信度分数
+            classes = result.boxes.cls  # 获取类别标签
+            
+            for i, box in enumerate(boxes):
+                detections.append({
+                    'class': self.labels[int(classes[i])],
+                    'x_center': (box[0] + box[2]) / 2,
+                    'y_center': (box[1] + box[3]) / 2,
+                    'score': scores[i],
+                })
+        
+        # 按照置信度分数降序排序
+        return sorted(detections, key=lambda x: x['score'], reverse=True)
 
     def draw_detections(self, frame, results):
         """
