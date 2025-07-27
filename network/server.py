@@ -60,12 +60,12 @@ class AsyncServer:
             print(f"Received {message!r} from {addr}")
 
             # 根据接收到的消息执行相应的操作
-            if message == "start":
+            if message == "start_capture":
                 response = "Starting camera capture..."
                 self.camera_capture.start_pipeline()
                 self.start_display_thread()
 
-            elif message == "exit":
+            elif message == "stop_capture":
                 response = "Goodbye!"
                 self.stop_display_thread()
                 self.camera_capture.stop_capture()
@@ -79,6 +79,27 @@ class AsyncServer:
                     response = str(sorted_results)
                 else:
                     response = "None"
+
+            elif message == "start_display":
+                if not self.running_display:
+                    self.start_display_thread()
+                    response = "Display started."
+                else:
+                    response = "Display already running."
+
+            elif message == "stop_display":
+                if self.running_display:
+                    self.stop_display_thread()
+                    response = "Display stopped."
+                else:
+                    response = "Display is not running."
+
+            elif message == "exit_server":
+                self.stop_display_thread()
+                self.camera_capture.stop_capture()
+                response = "Server stopped."
+                break
+
             else:
                 response = f"Received: {message}"
 
@@ -88,6 +109,10 @@ class AsyncServer:
 
         print("Closing connection")
         writer.close()
+    
+        # 创建服务器停止动作
+        await writer.wait_closed()
+
 
     async def start(self):
         server = await asyncio.start_server(
@@ -101,6 +126,12 @@ class AsyncServer:
 
     def run(self):
         asyncio.run(self.start())
+
+    def stop(self):
+        """停止服务器"""
+        if self.display_thread and self.display_thread.is_alive():
+            self.stop_display_thread()
+        print("Server stopped.")
 
 if __name__ == "__main__":
     server = AsyncServer()
