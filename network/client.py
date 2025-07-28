@@ -17,7 +17,7 @@ class AsyncClient:
             print(f"Send: {message!r}")
 
             # 等待接收响应
-            data = await reader.read(10000)
+            data = await reader.read(4096)
             print(f"Received: {data.decode()!r}")
 
             # 根据不同的响应结果执行操作
