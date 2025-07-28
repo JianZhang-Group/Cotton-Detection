@@ -83,4 +83,3 @@ Thumbs.db
 # Ignore specific files
 train/datasets/*
 runs/*
-*.pt
