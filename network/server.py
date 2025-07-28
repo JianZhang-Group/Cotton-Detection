@@ -26,7 +26,7 @@ def to_serializable(obj):
 
 
 class AsyncServer:
-    def __init__(self, host='127.0.0.1', port=8888, model_path="./models/model.pt", device='0'):
+    def __init__(self, host='127.0.0.1', port=8888, model_path="./models/best.pt", device='0'):
         self.host = host
         self.port = port
         self.camera_capture = CameraCapture()

@@ -17,7 +17,7 @@ class Program
 
         var startResp = await client.StartCaptureAsync();
         Console.WriteLine($"启动结果: {startResp.GetProperty("status").GetString()}");
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 100; i++)
         {
             var detectionsResp = await client.GetDetectionsAsync();
 
