@@ -4,12 +4,13 @@ from recognition.detector import ObjectDetector
 import threading
 import cv2
 
+
 class AsyncServer:
-    def __init__(self, host='127.0.0.1', port=8888):
+    def __init__(self, host='127.0.0.1', port=8888,model_path="./models/model.pt", device='0'):
         self.host = host
         self.port = port
         self.camera_capture = CameraCapture()
-        self.detector = ObjectDetector(model_path="./models/model.pt", device='cpu')
+        self.detector = ObjectDetector(model_path=model_path, device=device)
         self.running_display = False
         self.display_thread = None
 
