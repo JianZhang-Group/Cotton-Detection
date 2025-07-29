@@ -66,8 +66,8 @@ class AsyncServer:
         print(f"Client connected: {addr}")
 
         buffer = ""
-        while True:
-            try:
+        try:
+            while True:
                 data = await reader.read(4096)
                 print(f"Received data from {addr}: {data.decode()!r}")
                 if not data:
@@ -128,14 +128,16 @@ class AsyncServer:
                             response = {"status": "ok", "message": "Display stopped."}
                         else:
                             response = {"status": "warn", "message": "Display is not running."}
-
+                    
+                    # 不建议使用,有问题
                     elif command == "exit_server":
                         self.stop_display_thread()
                         self.camera_capture.stop_capture()
-                        response = {"status": "ok", "message": "Server stopped."}
+                        response = {"status": "ok", "message": "Server stopping."}
                         writer.write((json.dumps(response) + "\n").encode())
                         await writer.drain()
-                        return
+                        await self.stop()
+                        return                   
 
                     else:
                         response = {"status": "error", "message": f"Unknown command: {command}"}
@@ -143,23 +145,37 @@ class AsyncServer:
                     writer.write((json.dumps(response) + "\n").encode())
                     await writer.drain()
 
-            except ConnectionResetError:
-                print(f"Client {addr} disconnected unexpectedly.")
-                break
-
-        print(f"Closing connection with {addr}")
-        writer.close()
-        await writer.wait_closed()
+        except ConnectionResetError:
+                print(f"⚠️ Client {addr} disconnected unexpectedly.")
+        
+        finally:
+            print(f"Closing connection with {addr}")
+            self.stop_display_thread()
+            self.camera_capture.stop_capture()
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except (ConnectionResetError, OSError):
+                print(f"⚠️ Connection with {addr} already closed.")
 
     async def start(self):
-        server = await asyncio.start_server(self.handle_client, self.host, self.port)
-        addr = server.sockets[0].getsockname()
+        self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
+        addr = self.server.sockets[0].getsockname()
         print(f"Server started at {addr}")
-        async with server:
-            await server.serve_forever()
+        async with self.server:
+            await self.server.serve_forever()
+    
+    async def stop(self):
+        if self.server:
+            self.server.close()
+            await self.server.wait_closed()
+            print("✅ Server fully stopped.")
 
     def run(self):
-        asyncio.run(self.start())
+        try:
+            asyncio.run(self.start())
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            print("✅ Server stopped gracefully.")
 
 
 if __name__ == "__main__":

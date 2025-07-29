@@ -17,7 +17,7 @@ class Client
 
         var startResp = await client.StartCaptureAsync();
         Console.WriteLine($"启动结果: {startResp.GetProperty("status").GetString()}");
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10; i++)
         {
             var detectionsResp = await client.GetDetectionsAsync();
 
@@ -39,7 +39,5 @@ class Client
 
         var stopResp = await client.StopCaptureAsync();
         Console.WriteLine($"停止结果: {stopResp.GetProperty("status").GetString()}");
-
-        await client.ExitServerAsync();
     }
 }
