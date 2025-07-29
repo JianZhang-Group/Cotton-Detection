@@ -1,35 +1,13 @@
-# Camera Object Recognition Client
+# Cotton-Detection
 
 ## Overview
-This project is a client application that utilizes a camera to recognize objects in real-time and sends their coordinates to a server. It is designed to be modular, with separate components for camera handling, object recognition, and network communication.
-
-## Project Structure
-```
-camera-object-client
-├── src
-│   ├── main.py                # Entry point of the application
-│   ├── camera
-│   │   ├── __init__.py        # Camera module initialization
-│   │   └── capture.py         # Handles camera initialization and frame capturing
-│   ├── recognition
-│   │   ├── __init__.py        # Recognition module initialization
-│   │   └── detector.py        # Processes frames and detects objects
-│   ├── network
-│   │   ├── __init__.py        # Network module initialization
-│   │   └── client.py          # Manages communication with the server
-│   └── utils
-│       ├── __init__.py        # Utility module initialization
-│       └── helpers.py         # Contains utility functions
-├── requirements.txt            # Lists project dependencies
-├── README.md                   # Project documentation
-└── config.yaml                 # Configuration settings
-```
+This project is a server application that utilizes a camera to recognize objects in real-time and sends their coordinates to a client. It is designed to be modular, with separate components for camera handling, object recognition, and network communication.
 
 ## Setup Instructions
 1. **Clone the repository**:
    ```
-   git clone <repository-url>
-   cd camera-object-client
+   git clone https://github.com/JianZhang-Group/Cotton-Detection
+   cd Cotton-Detection
    ```
 
 2. **Install dependencies**:
@@ -38,16 +16,24 @@ camera-object-client
    pip install -r requirements.txt
    ```
 
+   Then, you can follow the instruction on [pyorbbecsdk](https://orbbec.github.io/pyorbbecsdk/index.html) to setup the environment.
+
 3. **Configure the application**:
-   Edit the `config.yaml` file to set your camera parameters and server address.
+   Edit the `config.yaml` file to set your camera parameters.
 
 ## Usage
 To run the application, execute the following command:
 ```
-python src/main.py
+python main.py
 ```
 
-The application will initialize the camera, start capturing frames, detect objects, and send their coordinates to the specified server.
+The application will initialize the server.
+
+## Packaged
+Run the following command:
+```
+pyinstaller main.py --contents-directory . --add-data "models;models" --add-data "config.yaml;." -n Cotton-Detection
+```
 
 ## Contributing
 Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
