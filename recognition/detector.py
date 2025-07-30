@@ -51,6 +51,36 @@ class ObjectDetector:
         # 按照置信度分数降序排序
         return sorted(detections, key=lambda x: x['score'], reverse=True)
 
+        # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
+    def get_sorted_track_detections(self, results):
+        """
+        Sort tracking detections by confidence score.
+        :param results: Tracking results from the YOLO model.
+        :return: Sorted list of tracking detections.
+        """
+        track_detections = []
+        for result in results:
+            boxes = result.boxes.cpu().xyxy.numpy()  # 获取边界框坐标
+            scores = result.boxes.cpu().conf.numpy()  # 获取置信度分数
+            classes = result.boxes.cls.cpu().numpy().astype(int)  # 获取类别标签
+            # 如果没有 id，填充为 -1
+            if result.boxes.id is not None:
+                ids = result.boxes.id.cpu().numpy().astype(int)
+            else:
+                ids = [-1] * len(boxes)
+
+        for box, score, cls, track_id in zip(boxes, scores, classes, ids):
+            track_detections.append({
+                'id': int(track_id),
+                'class': self.labels[cls],
+                'x_center': float((box[0] + box[2]) / 2),
+                'y_center': float((box[1] + box[3]) / 2),
+                'score': float(score),
+            })
+        
+        # 按照置信度分数降序排序
+        return sorted(track_detections, key=lambda x: x['score'], reverse=True)
+
     def draw_detections(self, frame, results):
         """
         Draw detected bounding boxes and labels on the frame.
@@ -73,4 +103,33 @@ class ObjectDetector:
                 x1, y1, x2, y2 = map(int, box)
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                 cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        return frame
+    
+    def draw_track_detections(self, frame, results):
+        """
+        Draw tracked bounding boxes, IDs, and labels on the frame.
+        :param frame: Input image frame (BGR format).
+        :param results: Tracking results from the YOLO model.
+        :return: Annotated frame.
+        """
+        for result in results:
+            boxes = result.boxes.xyxy
+            scores = result.boxes.conf
+            classes = result.boxes.cls
+            ids = result.boxes.id if result.boxes.id is not None else [-1] * len(boxes)
+
+            for box, score, cls, track_id in zip(boxes, scores, classes, ids):
+                label = self.labels[int(cls)]
+                score_val = float(score) if score is not None else 1.0
+                track_id_val = int(track_id) if track_id is not None else -1
+
+                label_text = f"ID:{track_id_val} {label} {score_val:.2f}"
+                
+                # Draw bounding box
+                x1, y1, x2, y2 = map(int, box)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
+                # Draw label text
+                cv2.putText(frame, label_text, (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         return frame
