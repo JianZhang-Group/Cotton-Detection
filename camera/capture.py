@@ -95,6 +95,45 @@ class CameraCapture:
             self.cap.release()
             self.cap = None
             print("Camera released.")
+    
+    def get_depth_from_point(depth_frame, x, y, window_size=5, min_depth=20, max_depth=10000):
+        """
+        根据图像坐标 (x, y) 获取深度值 (mm)，使用一个小窗口取中位数来减少噪声
+        :param depth_frame: Orbbec 的 depth_frame 对象
+        :param x: 像素坐标 x
+        :param y: 像素坐标 y
+        :param window_size: 邻域大小 (必须是奇数)，默认 5 表示取 5x5 窗口
+        :param min_depth: 最小有效深度，单位 mm
+        :param max_depth: 最大有效深度，单位 mm
+        :return: 中位数深度 (int, mm)，无效时返回 None
+        """
+        try:
+            width = depth_frame.get_width()
+            height = depth_frame.get_height()
+            scale = depth_frame.get_depth_scale() * 1000  # 转换为 mm
+
+            depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
+            depth_data = depth_data.astype(np.float32) * scale
+
+            # 过滤不合理深度
+            depth_data = np.where((depth_data > min_depth) & (depth_data < max_depth), depth_data, 0)
+
+            # 限制窗口范围
+            half_w = window_size // 2
+            x_min, x_max = max(0, x - half_w), min(width, x + half_w + 1)
+            y_min, y_max = max(0, y - half_w), min(height, y + half_w + 1)
+
+            roi = depth_data[y_min:y_max, x_min:x_max]
+            valid_depths = roi[roi > 0]
+
+            if valid_depths.size == 0:
+                return None
+
+            return int(np.median(valid_depths))
+
+        except Exception as e:
+            print(f"[get_depth_from_point] Failed: {e}")
+            return None
 
 # 用法示例
 if __name__ == "__main__":

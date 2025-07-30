@@ -35,8 +35,15 @@ def test_tracker():
         if color is None:
             continue
         results = detector.track_objects(color)
-        print("Tracking results:", results)
         sorted_detections = detector.get_sorted_track_detections(results)
+        # 根据点获得深度信息
+        for detection in sorted_detections:
+            x_center = int(detection['x_center'])
+            y_center = int(detection['y_center'])
+            depth_value = camera.get_depth_from_point(depth_data, x_center, y_center)
+            if depth_value is not None:
+                cv2.putText(color, f"Depth: {depth_value}mm", (x_center, y_center - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         color = detector.draw_track_detections(color, results)
         cv2.imshow("Object Detection", color)
 
