@@ -18,6 +18,15 @@ class ObjectDetector:
         results = self.model(frame, device=self.device, verbose=False)
         return results
     
+    def track_objects(self, frame):
+        """
+        Track objects in the given frame using the YOLO model.
+        :param frame: Input image frame (BGR format).
+        :return: Tracking results.
+        """
+        results = self.model.track(frame, persist=True, device=self.device, verbose=False)
+        return results
+
     # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
     def get_sorted_detections(self, results):
         """
