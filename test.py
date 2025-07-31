@@ -31,7 +31,7 @@ def test_tracker():
     camera.start_pipeline()
 
     while True:
-        color,depth = camera.get_frame()
+        color,depth = camera.get_frame(original=True)
         if color is None:
             continue
         results = detector.track_objects(color)
@@ -40,7 +40,8 @@ def test_tracker():
         for detection in sorted_detections:
             x_center = int(detection['x_center'])
             y_center = int(detection['y_center'])
-            depth_value = camera.get_depth_from_point(depth_data, x_center, y_center)
+            depth_value = camera.get_depth_from_point(depth, x_center, y_center)
+            print(f"Depth at ({x_center}, {y_center}): {depth_value} mm")
             if depth_value is not None:
                 cv2.putText(color, f"Depth: {depth_value}mm", (x_center, y_center - 10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)

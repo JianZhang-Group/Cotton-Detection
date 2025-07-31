@@ -30,7 +30,7 @@ class CameraCapture:
         self.pipeline.start()
         print("Pipeline started successfully.")
 
-    def get_frame(self):
+    def get_frame(self,original=False):
         if self.cap is not None:
             ret, frame = self.cap.read()
             if not ret:
@@ -48,15 +48,18 @@ class CameraCapture:
             if depth_frame.get_format() != OBFormat.Y16:
                 print("Depth format is not Y16")
                 return color_image, None
-            width = depth_frame.get_width()
-            height = depth_frame.get_height()
-            scale = depth_frame.get_depth_scale()
-            depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
-            depth_data = depth_data.astype(np.float32) * scale
-            depth_data = np.where((depth_data > MIN_DEPTH) & (depth_data < MAX_DEPTH), depth_data, 0).astype(np.uint16)
-            depth_image = cv2.normalize(depth_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-            depth_image = cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
-            return color_image, depth_image
+            if not original:
+                width = depth_frame.get_width()
+                height = depth_frame.get_height()
+                scale = depth_frame.get_depth_scale()
+                depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
+                depth_data = depth_data.astype(np.float32) * scale
+                depth_data = np.where((depth_data > MIN_DEPTH) & (depth_data < MAX_DEPTH), depth_data, 0).astype(np.uint16)
+                depth_image = cv2.normalize(depth_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                depth_image = cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
+                return color_image, depth_image
+            else:
+                return color_image, depth_frame
         else:
             raise Exception("Camera not initialized.")
 
@@ -95,23 +98,19 @@ class CameraCapture:
             self.cap.release()
             self.cap = None
             print("Camera released.")
-    
-    def get_depth_from_point(depth_frame, x, y, window_size=5, min_depth=20, max_depth=10000):
+
+    def get_depth_from_point(self,depth_frame, x, y, width=848, height=480, scale=1, window_size=5, min_depth=20, max_depth=10000):
         """
         根据图像坐标 (x, y) 获取深度值 (mm)，使用一个小窗口取中位数来减少噪声
         :param depth_frame: Orbbec 的 depth_frame 对象
         :param x: 像素坐标 x
         :param y: 像素坐标 y
-        :param window_size: 邻域大小 (必须是奇数)，默认 5 表示取 5x5 窗口
+        :param window_size: 邻域大小 (必须是奇数)，默认 5 表示取 1x1 窗口
         :param min_depth: 最小有效深度，单位 mm
         :param max_depth: 最大有效深度，单位 mm
         :return: 中位数深度 (int, mm)，无效时返回 None
         """
         try:
-            width = depth_frame.get_width()
-            height = depth_frame.get_height()
-            scale = depth_frame.get_depth_scale() * 1000  # 转换为 mm
-
             depth_data = np.frombuffer(depth_frame.get_data(), dtype=np.uint16).reshape((height, width))
             depth_data = depth_data.astype(np.float32) * scale
 
