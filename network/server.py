@@ -110,7 +110,7 @@ class AsyncServer:
                         color_image, depth_image = self.camera_capture.get_frame(original=True)
                         if color_image is not None:
                             results = self.detector.track_objects(color_image)
-                            sorted_results = self.detector.get_sorted_track_detections(results)    
+                            sorted_results = self.detector.get_sorted_track_detections(results, depth_image=depth_image)
                             response = {"status": "ok", "detections": to_serializable(sorted_results)}
                         else:
                             response = {"status": "error", "message": "No frame available."}

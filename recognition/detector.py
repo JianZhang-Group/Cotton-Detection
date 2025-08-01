@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+import camera.capture
 
 class ObjectDetector:
     def __init__(self, model_path, device='cpu'):
@@ -52,7 +53,7 @@ class ObjectDetector:
         return sorted(detections, key=lambda x: x['score'], reverse=True)
 
         # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
-    def get_sorted_track_detections(self, results):
+    def get_sorted_track_detections(self, results, depth_image=None):
         """
         Sort tracking detections by confidence score.
         :param results: Tracking results from the YOLO model.
@@ -70,14 +71,21 @@ class ObjectDetector:
                 ids = [-1] * len(boxes)
 
         for box, score, cls, track_id in zip(boxes, scores, classes, ids):
+            x_center = int((box[0] + box[2]) / 2)
+            y_center = int((box[1] + box[3]) / 2)
+
+            depth_val = None
+            if depth_image is not None:
+                depth_val = camera.capture.CameraCapture.get_depth_from_point(depth_frame=depth_image, x=x_center, y=y_center)
+
             track_detections.append({
                 'id': int(track_id),
                 'class': self.labels[cls],
-                'x_center': float((box[0] + box[2]) / 2),
-                'y_center': float((box[1] + box[3]) / 2),
+                'x_center': float(x_center),
+                'y_center': float(y_center),
                 'score': float(score),
+                'depth': depth_val   # 新增深度信息
             })
-        
         # 按照置信度分数降序排序
         return sorted(track_detections, key=lambda x: x['score'], reverse=True)
 
@@ -104,7 +112,7 @@ class ObjectDetector:
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
                 cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
         return frame
-    
+
     def draw_track_detections(self, frame, results):
         """
         Draw tracked bounding boxes, IDs, and labels on the frame.
