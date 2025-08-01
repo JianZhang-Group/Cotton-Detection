@@ -52,8 +52,8 @@ class AsyncServer:
             color_image, _ = self.camera_capture.get_frame()
             if color_image is None:
                 continue
-            results = self.detector.detect_objects(color_image)
-            frame = self.detector.draw_detections(color_image, results)
+            results = self.detector.track_objects(color_image)
+            frame = self.detector.draw_track_detections(color_image, results)
             cv2.imshow("Live Detection", frame)
             key = cv2.waitKey(1)
             if key == 27 or cv2.getWindowProperty("Live Detection", cv2.WND_PROP_VISIBLE) < 1:
@@ -107,10 +107,10 @@ class AsyncServer:
                         response = {"status": "ok", "message": "Camera capture stopped."}
 
                     elif command == "capture":
-                        color_image, depth_image = self.camera_capture.get_frame()
+                        color_image, depth_image = self.camera_capture.get_frame(original=True)
                         if color_image is not None:
-                            results = self.detector.detect_objects(color_image)
-                            sorted_results = self.detector.get_sorted_detections(results)
+                            results = self.detector.track_objects(color_image)
+                            sorted_results = self.detector.get_sorted_track_detections(results)    
                             response = {"status": "ok", "detections": to_serializable(sorted_results)}
                         else:
                             response = {"status": "error", "message": "No frame available."}
