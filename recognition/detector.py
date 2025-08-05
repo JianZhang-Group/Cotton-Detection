@@ -24,10 +24,10 @@ class ObjectDetector:
         :param frame: Input image frame (BGR format).
         :return: Tracking results.
         """
-        results = self.model.track(frame, persist=True, device=self.device, verbose=False)
+        results = self.model.track(frame, persist=True, device=self.device, verbose=False, tracker='./recognition/custom_tracker.yaml')
         return results
 
-    # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
+    # 将结果中的边界框坐标转换为中心点坐标并按照y坐标将中心点及其标签排序输出
     def get_sorted_detections(self, results):
         """
         Sort detections by confidence score.
@@ -48,8 +48,8 @@ class ObjectDetector:
                     'score': scores[i],
                 })
         
-        # 按照置信度分数降序排序
-        return sorted(detections, key=lambda x: x['score'], reverse=True)
+        # 按照y坐标降序排序
+        return sorted(detections, key=lambda x: x['y_center'], reverse=True)
 
         # 将结果中的边界框坐标转换为中心点坐标并按照置信度分数将中心点及其标签排序输出
     def get_sorted_track_detections(self, results):
@@ -78,8 +78,8 @@ class ObjectDetector:
                 'score': float(score),
             })
         
-        # 按照置信度分数降序排序
-        return sorted(track_detections, key=lambda x: x['score'], reverse=True)
+        # 按照y坐标降序排序
+        return sorted(track_detections, key=lambda x: x['y_center'], reverse=True)
 
     def draw_detections(self, frame, results):
         """
