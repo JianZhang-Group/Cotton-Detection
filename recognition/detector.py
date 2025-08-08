@@ -1,5 +1,6 @@
 import cv2
 from ultralytics import YOLO
+from datetime import datetime
 
 class ObjectDetector:
     def __init__(self, model_path, device='cpu'):
@@ -35,6 +36,7 @@ class ObjectDetector:
         :return: Sorted list of detections.
         """
         detections = []
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         for result in results:
             boxes = result.boxes.xyxy  # 获取边界框坐标
             scores = result.boxes.conf  # 获取置信度分数
@@ -46,6 +48,7 @@ class ObjectDetector:
                     'x_center': (box[0] + box[2]) / 2,
                     'y_center': (box[1] + box[3]) / 2,
                     'score': scores[i],
+                    'timestamp': current_time,  # 加入时间戳
                 })
         
         # 按照y坐标降序排序
@@ -59,6 +62,7 @@ class ObjectDetector:
         :return: Sorted list of tracking detections.
         """
         track_detections = []
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         for result in results:
             boxes = result.boxes.cpu().xyxy.numpy()  # 获取边界框坐标
             scores = result.boxes.cpu().conf.numpy()  # 获取置信度分数
@@ -76,6 +80,7 @@ class ObjectDetector:
                 'x_center': float((box[0] + box[2]) / 2),
                 'y_center': float((box[1] + box[3]) / 2),
                 'score': float(score),
+                'timestamp': current_time,  # 加入时间戳
             })
         
         # 按照y坐标降序排序
